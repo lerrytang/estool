@@ -244,7 +244,12 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
 
       prev_obs = obs
 
-      obs, reward, done, info = model.env.step(action)
+      if train_mode:
+        mirror_obs = model.env.flip_observation(obs)
+        mirror_action = model.get_action(mirror_obs, t=t, mean_mode=False)
+        obs, reward, done, info = model.env.step(action, mirror_action)
+      else:
+        obs, reward, done, info = model.env.step(action)
 
       if dct_compress_mode:
         obs = compress_input_dct(obs)
