@@ -2,11 +2,13 @@ import numpy as np
 import gym
 import pybullet as p
 import pybullet_envs
-import pybullet_envs.bullet.minitaur_gym_env as minitaur_gym_env
-import pybullet_envs.bullet.racecarGymEnv as racecarGymEnv
-import pybullet_envs.bullet.kukaGymEnv as kukaGymEnv
-from custom_envs.minitaur_duck import MinitaurDuckBulletEnv
-from custom_envs.minitaur_ball import MinitaurBallBulletEnv
+#import pybullet_envs.bullet.minitaur_gym_env as minitaur_gym_env
+#import pybullet_envs.bullet.racecarGymEnv as racecarGymEnv
+#import pybullet_envs.bullet.kukaGymEnv as kukaGymEnv
+#from custom_envs.minitaur_duck import MinitaurDuckBulletEnv
+#from custom_envs.minitaur_ball import MinitaurBallBulletEnv
+from human_following_robot.env.hfr_env_base import HumanFollowingRobotBaseEnv
+
 
 def make_env(env_name, seed=-1, render_mode=False):
   if (env_name.startswith("RacecarBulletEnv")):
@@ -39,6 +41,9 @@ def make_env(env_name, seed=-1, render_mode=False):
   elif (env_name.startswith("KukaBulletEnv")):
     print("bullet_kuka_grasping started")
     env = kukaGymEnv.KukaGymEnv(renders=render_mode,isDiscrete=False)
+  elif (env_name.startswith("HFR")):
+    print("human_following_robot started")
+    env = HumanFollowingRobotBaseEnv(render=False)
   else:
     if env_name.startswith("Roboschool"):
       import roboschool

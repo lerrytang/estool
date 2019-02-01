@@ -318,6 +318,7 @@ def master():
 
     mean_time_step = int(np.mean(reward_list_total[:, 1])*100)/100. # get average time step
     max_time_step = int(np.max(reward_list_total[:, 1])*100)/100. # get average time step
+    min_time_step = int(np.min(reward_list_total[:, 1])*100)/100. # get average time step
     avg_reward = int(np.mean(reward_list)*100)/100. # get average time step
     std_reward = int(np.std(reward_list)*100)/100. # get average time step
 
@@ -334,7 +335,7 @@ def master():
 
     curr_time = int(time.time()) - start_time
 
-    h = (t, curr_time, avg_reward, r_min, r_max, std_reward, int(es.rms_stdev()*100000)/100000., mean_time_step+1., int(max_time_step)+1)
+    h = (t, curr_time, avg_reward, r_min, r_max, std_reward, int(es.rms_stdev()*100000)/100000., mean_time_step+1., int(max_time_step)+1, int(min_time_step)+1)
 
     if cap_time_mode:
       max_len = 2*int(mean_time_step+1.0)
