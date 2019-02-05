@@ -259,8 +259,8 @@ bipedhard = Game(env_name='BipedalWalkerHardcore-v2',
 games['bipedhard'] = bipedhard
 
 hfr = Game(env_name='HFR',
-  input_size=27,
-  output_size=12,
+  input_size=[27, 10],
+  output_size=[12, 2],
   time_factor=0,
   layers=[40, 40],
   activation='tanh',

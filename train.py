@@ -49,6 +49,10 @@ filebase = None
 
 game = None
 model = None
+chaser_model = None
+target_model = None
+chaser_model_param_cnt = -1
+target_model_param_cnt = -1
 num_params = -1
 
 es = None
@@ -63,12 +67,14 @@ RESULT_PACKET_SIZE = 4*num_worker_trial
 ###
 
 def initialize_settings(sigma_init=0.1, sigma_decay=0.9999):
-  global population, filebase, game, model, num_params, es, PRECISION, SOLUTION_PACKET_SIZE, RESULT_PACKET_SIZE
+  global population, filebase, game, model, num_params, es, PRECISION, SOLUTION_PACKET_SIZE, RESULT_PACKET_SIZE, chaser_model, chaser_model_param_cnt, target_model, target_model_param_cnt
   population = num_worker * num_worker_trial
   filebase = 'log/'+gamename+'.'+optimizer+'.'+str(num_episode)+'.'+str(population)
   game = config.games[gamename]
-  model = make_model(game)
-  num_params = model.param_count
+  chaser_model, target_model = make_model(game)
+  chaser_model_param_cnt = chaser_model.param_count
+  target_model_param_cnt = target_model.param_count
+  num_params = chaser_model_param_cnt + target_model_param_cnt
   print("size of model", num_params)
 
   if optimizer == 'ses':
@@ -193,8 +199,12 @@ def decode_result_packet(packet):
 def worker(weights, seed, train_mode_int=1, max_len=-1):
 
   train_mode = (train_mode_int == 1)
-  model.set_model_params(weights)
-  reward_list, t_list = simulate(model,
+  chaser_weights = weights[:chaser_model_param_cnt]
+  chaser_model.set_model_params(chaser_weights)
+  target_weights = weights[chaser_model_param_cnt:]
+  target_model.set_model_params(target_weights)
+
+  reward_list, t_list = simulate(tuple([chaser_model, target_model]),
     train_mode=train_mode, render_mode=False, num_episode=num_episode, seed=seed, max_len=max_len)
   if batch_mode == 'min':
     reward = np.min(reward_list)
@@ -204,7 +214,7 @@ def worker(weights, seed, train_mode_int=1, max_len=-1):
   return reward, t
 
 def slave():
-  model.make_env()
+  chaser_model.make_env()
   packet = np.empty(SOLUTION_PACKET_SIZE, dtype=np.int32)
   while 1:
     comm.Recv(packet, source=0)
@@ -287,7 +297,7 @@ def master():
   filename_hist = filebase+'.hist.json'
   filename_best = filebase+'.best.json'
 
-  model.make_env()
+  chaser_model.make_env()
 
   t = 0
 
@@ -328,7 +338,10 @@ def master():
     model_params = es_solution[0] # best historical solution
     reward = es_solution[1] # best reward
     curr_reward = es_solution[2] # best of the current batch
-    model.set_model_params(np.array(model_params).round(4))
+    chaser_model_params = model_params[:chaser_model_param_cnt]
+    chaser_model.set_model_params(np.array(chaser_model_params).round(4))
+    target_model_params = model_params[chaser_model_param_cnt:]
+    target_model.set_model_params(np.array(target_model_params).round(4))
 
     r_max = int(np.max(reward_list)*100)/100.
     r_min = int(np.min(reward_list)*100)/100.
@@ -346,6 +359,12 @@ def master():
 
     with open(filename, 'wt') as out:
       res = json.dump([np.array(es.current_param()).round(4).tolist()], out, sort_keys=True, indent=2, separators=(',', ': '))
+    chaser_model_params = np.array(es.current_param()[:chaser_model_param_cnt]).round(4).tolist()
+    with open(filename + '.chaser', 'wt') as out:
+      res = json.dump([chaser_model_params], out, sort_keys=True, indent=2, separators=(',', ': '))
+    target_model_params = np.array(es.current_param()[chaser_model_param_cnt:]).round(4).tolist()
+    with open(filename + '.target', 'wt') as out:
+      res = json.dump([target_model_params], out, sort_keys=True, indent=2, separators=(',', ': '))
 
     with open(filename_hist, 'wt') as out:
       res = json.dump(history, out, sort_keys=False, indent=0, separators=(',', ':'))
@@ -373,6 +392,12 @@ def master():
           es.set_mu(best_model_params_eval)
       with open(filename_best, 'wt') as out:
         res = json.dump([best_model_params_eval, best_reward_eval], out, sort_keys=True, indent=0, separators=(',', ': '))
+      chaser_model_params = best_model_params_eval[:chaser_model_param_cnt]
+      with open(filename_best + '.chaser', 'wt') as out:
+        res = json.dump([chaser_model_params, best_reward_eval], out, sort_keys=True, indent=0, separators=(',', ': '))
+      target_model_params = best_model_params_eval[chaser_model_param_cnt:]
+      with open(filename_best + '.target', 'wt') as out:
+        res = json.dump([target_model_params, best_reward_eval], out, sort_keys=True, indent=0, separators=(',', ': '))
       sprint("improvement", t, improvement, "curr", reward_eval, "prev", prev_best_reward_eval, "best", best_reward_eval)
 
 

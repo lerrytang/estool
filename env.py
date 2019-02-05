@@ -8,6 +8,7 @@ import pybullet_envs
 #from custom_envs.minitaur_duck import MinitaurDuckBulletEnv
 #from custom_envs.minitaur_ball import MinitaurBallBulletEnv
 from human_following_robot.env.hfr_env_base import HumanFollowingRobotBaseEnv
+from human_following_robot.env.hfr_adversarial_env import AdversarialEnv
 
 
 def make_env(env_name, seed=-1, render_mode=False):
@@ -42,8 +43,8 @@ def make_env(env_name, seed=-1, render_mode=False):
     print("bullet_kuka_grasping started")
     env = kukaGymEnv.KukaGymEnv(renders=render_mode,isDiscrete=False)
   elif (env_name.startswith('HFR')):
-    print('human following robot started')
-    env = HumanFollowingRobotBaseEnv(render=False)
+    print('Adversarial human following robot started')
+    env = AdversarialEnv(render=False)
   else:
     if env_name.startswith("Roboschool"):
       import roboschool

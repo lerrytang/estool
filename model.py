@@ -47,15 +47,13 @@ def decompress_1d(c, shape, axis=0):
 
 def make_model(game):
   # can be extended in the future.
-  if game.rnn_mode:
-    model = RNNModel(game)
-  else:
-    model = Model(game)
-  return model
+  chaser_model = Model(game, 0)
+  target_model = Model(game, 1)
+  return chaser_model, target_model
 
 class Model:
   ''' simple feedforward model '''
-  def __init__(self, game):
+  def __init__(self, game, ix=None):
     self.output_noise = game.output_noise
     self.env_name = game.env_name
     self.layer_1 = game.layers[0]
@@ -67,8 +65,12 @@ class Model:
     if game.time_factor > 0:
       self.time_factor = float(game.time_factor)
       self.time_input = 1
-    self.input_size = game.input_size
-    self.output_size = game.output_size
+    if ix is None:
+      self.input_size = game.input_size
+      self.output_size = game.output_size
+    else:
+      self.input_size = game.input_size[ix]
+      self.output_size = game.output_size[ix]
     if self.layer_2 > 0:
       self.shapes = [ (self.input_size + self.time_input, self.layer_1),
                       (self.layer_1, self.layer_2),
@@ -189,10 +191,12 @@ def compress_input_dct(obs):
 
 def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, max_len=-1):
 
+  chaser_model, target_model = model
+
   reward_list = []
   t_list = []
 
-  is_biped = (model.env_name.find("BipedalWalker") >= 0)
+  is_biped = (chaser_model.env_name.find("BipedalWalker") >= 0)
 
   orig_mode = True  # hack for bipedhard's reward augmentation during training (set to false for hack)
   if is_biped:
@@ -209,42 +213,63 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
   if (seed >= 0):
     random.seed(seed)
     np.random.seed(seed)
-    model.env.seed(seed)
+    chaser_model.env.seed(seed)
 
   for episode in range(num_episode):
 
-    if model.rnn_mode:
-      model.reset()
+    if chaser_model.rnn_mode:
+      chaser_model.reset()
 
-    obs = model.env.reset()
+    chaser_input_dim = chaser_model.input_size
+    chaser_output_dim = chaser_model.output_size
+    target_input_dim = target_model.input_size
+    target_output_dim = target_model.output_size
+
+    obs = chaser_model.env.reset()
     if dct_compress_mode and obs is not None:
       obs = compress_input_dct(obs)
 
     if obs is None:
-      obs = np.zeros(model.input_size)
+      obs = np.zeros(chaser_model.input_size)
 
     total_reward = 0.0
     stumbled = False # hack for bipedhard's reward augmentation during training. turned off.
     reward_threshold = 300 # consider we have won if we got more than this
 
+    chaser_reward = 0
+    target_reward = 0
+
     for t in range(max_episode_length):
 
+      chaser_ob = obs[:chaser_input_dim]
+      target_ob = obs[chaser_input_dim:]
+
       if render_mode:
-        model.env.render("human")
+        chaser_model.env.render("human")
         if RENDER_DELAY:
           time.sleep(0.01)
 
-      if model.rnn_mode:
-        action = model.get_action(obs)
+      if chaser_model.rnn_mode:
+        chaser_action = chaser_model.get_action(chaser_ob)
+        target_action = target_model.get_action(target_ob)
       else:
         if MEAN_MODE:
-          action = model.get_action(obs, t=t, mean_mode=(not train_mode))
+          chaser_action = chaser_model.get_action(
+            chaser_ob, t=t, mean_mode=(not train_mode))
+          target_action = target_model.get_action(
+            target_ob, t=t, mean_mode=(not train_mode))
         else:
-          action = model.get_action(obs, t=t, mean_mode=False)
-
+          chaser_action = chaser_model.get_action(
+            chaser_ob, t=t, mean_mode=False)
+          target_action = target_model.get_action(
+            target_ob, t=t, mean_mode=False)
       prev_obs = obs
 
-      obs, reward, done, info = model.env.step(action)
+      obs, reward, done, info = chaser_model.env.step(
+        chaser_action.tolist() + target_action.tolist())
+
+      chaser_reward += reward[0]
+      target_reward += reward[1]
 
       if dct_compress_mode:
         obs = compress_input_dct(obs)
@@ -258,9 +283,10 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
         pass
         #print("action", action, "step reward", reward)
         #print("step reward", reward)
-      total_reward += reward
+#      total_reward += reward
 
       if done:
+        total_reward = chaser_reward * target_reward * 0.001
         if train_mode and (not stumbled) and (total_reward > reward_threshold) and (not orig_mode):
            # hack for bipedhard's reward augmentation during training. turned off.
           total_reward += 100
