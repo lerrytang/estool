@@ -1,0 +1,11 @@
+target_distance_min: 2.0
+target_distance_max: 5.0
+target_angle_max: 0.8
+keep_distance: 1.5
+max_steps: 2000
+time_step: 0.01
+action_repeat: 1
+traj_deviation_penalty: 0.0
+jnt_accelerate_penalty: 0.0
+hip_traj_deviation_weight: 0.0
+base_height_weight: 0.0

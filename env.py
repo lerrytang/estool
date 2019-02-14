@@ -8,6 +8,8 @@ import pybullet_envs
 #from custom_envs.minitaur_duck import MinitaurDuckBulletEnv
 #from custom_envs.minitaur_ball import MinitaurBallBulletEnv
 from human_following_robot.env.hfr_env_base import HumanFollowingRobotBaseEnv
+import os
+import yaml
 
 
 def make_env(env_name, seed=-1, render_mode=False):
@@ -42,8 +44,24 @@ def make_env(env_name, seed=-1, render_mode=False):
     print("bullet_kuka_grasping started")
     env = kukaGymEnv.KukaGymEnv(renders=render_mode,isDiscrete=False)
   elif (env_name.startswith('HFR')):
+    hfr_config_file = os.path.join('log', 'hfr_config.yaml')
+    with open(hfr_config_file, 'r') as f:
+      hfr_config = yaml.load(f)
+      print(hfr_config)
+    env = HumanFollowingRobotBaseEnv(
+      target_distance_min=hfr_config['target_distance_min'],
+      target_distance_max=hfr_config['target_distance_max'],
+      target_angle_max=hfr_config['target_angle_max'],
+      keep_distance=hfr_config['keep_distance'],
+      max_steps=hfr_config['max_steps'],
+      time_step=hfr_config['time_step'],
+      action_repeat=hfr_config['action_repeat'],
+      traj_deviation_penalty=hfr_config['traj_deviation_penalty'],
+      jnt_accelerate_penalty=hfr_config['jnt_accelerate_penalty'],
+      hip_traj_deviation_weight=hfr_config['hip_traj_deviation_weight'],
+      base_height_weight=hfr_config['base_height_weight'],
+      render=False)
     print('human following robot started')
-    env = HumanFollowingRobotBaseEnv(render=False)
   else:
     if env_name.startswith("Roboschool"):
       import roboschool
