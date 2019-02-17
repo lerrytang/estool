@@ -10,3 +10,4 @@ jnt_accelerate_penalty: 0.0
 hip_traj_deviation_weight: 0.0
 base_height_weight: 0.0
 use_traj: True
+smooth_k_action: 1
