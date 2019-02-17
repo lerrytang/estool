@@ -61,7 +61,7 @@ def make_env(env_name, seed=-1, render_mode=False):
       hip_traj_deviation_weight=hfr_config['hip_traj_deviation_weight'],
       base_height_weight=hfr_config['base_height_weight'],
       use_traj=hfr_config['use_traj'],
-      smooth_k_action=config['smooth_k_action'],
+      smooth_k_action=hfr_config['smooth_k_action'],
       render=False)
     print('human following robot started')
   else:
