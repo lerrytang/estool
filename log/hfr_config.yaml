@@ -13,3 +13,5 @@ symmetric_action_weight: 0.02
 use_traj: True
 smooth_k_action: 1
 rand_flip_obs: False
+use_ref_pose: False
+max_allowed_deviation: 0.3

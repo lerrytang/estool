@@ -61,6 +61,8 @@ def make_env(env_name, seed=-1, render_mode=False):
       hip_traj_deviation_weight=hfr_config['hip_traj_deviation_weight'],
       base_height_weight=hfr_config['base_height_weight'],
       use_traj=hfr_config['use_traj'],
+      use_ref_pose=hfr_config['use_ref_pose'],
+      max_allowed_deviation=hfr_config['max_allowed_deviation'],
       smooth_k_action=hfr_config['smooth_k_action'],
       rand_flip_obs=hfr_config['rand_flip_obs'],
       symmetric_action_weight=hfr_config['symmetric_action_weight'],
