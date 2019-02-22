@@ -66,6 +66,7 @@ def make_env(env_name, seed=-1, render_mode=False):
       smooth_k_action=hfr_config['smooth_k_action'],
       rand_flip_obs=hfr_config['rand_flip_obs'],
       symmetric_action_weight=hfr_config['symmetric_action_weight'],
+      torque_control=hfr_config['torque_control'],
       render=False)
     print('human following robot started')
   else:
